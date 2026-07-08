@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-test-reproduce:
+    name: Build, test, and verify reproducibility
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pinned dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run the full pipeline and check determinism (byte-identical output)
+        run: |
+          python run_all.py
+          find . -name '*_en.csv' -print0 | sort -z | xargs -0 sha256sum > run1.sha256
+          python run_all.py
+          find . -name '*_en.csv' -print0 | sort -z | xargs -0 sha256sum > run2.sha256
+          diff run1.sha256 run2.sha256 \
+            && echo "OK: two executions of run_all.py produced byte-identical output."
+
+      - name: Verify no residual Chinese characters in the English deposit
+        run: python verify_no_chinese.py
+
+      - name: Verify deposited checksums
+        run: |
+          if [ -f SHA256SUMS.txt ]; then sha256sum -c SHA256SUMS.txt; \
+          else echo "SHA256SUMS.txt not found; skipping."; fi
+
+      - name: Run unit tests (if present)
+        run: |
+          if ls tests/*.py test_*.py *_test.py >/dev/null 2>&1; then
+            pip install pytest
+            pytest -q
+          else
+            echo "No pytest test modules found; skipping."
+          fi
