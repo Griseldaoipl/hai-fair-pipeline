@@ -1,0 +1,21 @@
+# Conda environment for the HAI surveillance deposit pipeline.
+# Recreate with:  conda env create -f environment.yml
+# then:           conda activate hai-surveillance
+#
+# Package versions are pinned to those used for the published analysis and
+# mirror requirements.txt exactly.
+name: hai-surveillance
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pandas=2.0.3
+  - numpy=1.24.3
+  - scipy=1.11.1
+  - scikit-learn=1.3.0
+  - matplotlib=3.7.2
+  - openpyxl=3.1.2
+  - pip
+  - pip:
+      - xgboost==1.7.6
